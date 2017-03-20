@@ -1,6 +1,5 @@
 package moga;
 
-import java.util.ArrayList;
 import java.util.Random;
 
 public class Main {
@@ -8,9 +7,9 @@ public class Main {
 	// write your code here
     }
 
-    public static ArrayList<Integer> generateRandomGenome(int x_sz, int y_sz, Random randomizer) {
+    public static int[] generateRandomGenome(int x_sz, int y_sz, Random randomizer) {
         int sz = x_sz*y_sz;
-        ArrayList<Integer> genome = new ArrayList<>();
+        int[] genome = new int[sz];
         for(int i = 0; i < sz; ++i) {
             float r = randomizer.nextFloat();
 
@@ -29,7 +28,7 @@ public class Main {
 
             if(val < 0 || val >= sz) val = i;
 
-            genome.add(val);
+            genome[i] = val;
         }
 
         return genome;
