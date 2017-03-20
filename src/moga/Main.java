@@ -1,10 +1,32 @@
 package moga;
 
+import javax.imageio.ImageIO;
+import javax.swing.*;
+import java.awt.*;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
 import java.util.Random;
 
 public class Main {
     public static void main(String[] args) {
-	// write your code here
+        BufferedImage img = getImage("./Test Image/1/Test image.jpg");
+        System.out.println(img.getRGB(0, 0));
+        System.out.println(img.getWidth());
+        JFrame frame = new JFrame();
+        frame.getContentPane().setLayout(new FlowLayout());
+        frame.getContentPane().add(new JLabel(new ImageIcon(img)));
+        frame.pack();
+        frame.setVisible(true);
+    }
+
+    public static BufferedImage getImage(String pathName) {
+        BufferedImage img = null;
+        try {
+            img = ImageIO.read(new File(pathName));
+        } catch (IOException e) {
+        }
+        return img;
     }
 
     public static int[] generateRandomGenome(int x_sz, int y_sz, Random randomizer) {
