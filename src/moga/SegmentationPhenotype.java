@@ -1,5 +1,6 @@
 package moga;
 
+import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -55,5 +56,27 @@ public class SegmentationPhenotype {
         }
 
         return true;
+    }
+
+    public int overallDeviation() {
+        return 0;
+    }
+
+    private double dist(int p0, int p1) {
+        Color c0 = new Color(image.getRGB(getX(p0), getY(p0)));
+        Color c1 = new Color(image.getRGB(getX(p1), getY(p1)));
+        int dR = c1.getRed()-c0.getRed();
+        int dG = c1.getGreen()-c0.getGreen();
+        int dB = c1.getBlue()-c0.getBlue();
+        double dist = Math.sqrt(Math.pow(dR, 2.0) + Math.pow(dG, 2.0) + Math.pow(dB, 2.0));
+        return dist;
+    }
+
+    private int getX(int pxNum) {
+        return pxNum % image.getWidth();
+    }
+
+    private int getY(int pxNum) {
+        return pxNum / image.getWidth();
     }
 }
