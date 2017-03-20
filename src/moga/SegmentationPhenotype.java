@@ -56,4 +56,12 @@ public class SegmentationPhenotype {
 
         return true;
     }
+
+    public void printSegments() {
+        int sz = segments.size();
+        for(int i = 0; i < sz; ++i) {
+            System.out.println("Segment " + Integer.toString(i) + ":");
+            System.out.println(segments.get(i).toString());
+        }
+    }
 }
