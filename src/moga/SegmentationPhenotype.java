@@ -58,18 +58,58 @@ public class SegmentationPhenotype {
         return true;
     }
 
-    public int overallDeviation() {
+    public double overallDeviation() {
+        double dev = 0;
+        for (ArrayList<Integer> segment: segments) {
+            Color centroidColor = getCentroidColor(segment);
+            for (Integer pixel: segment) {
+                Color pixelColor = getColor(pixel);
+                dev += colorDist(pixelColor, centroidColor);
+            }
+        }
+        return dev;
+    }
+
+    public double edge() {
+        //TODO
         return 0;
     }
 
-    private double dist(int p0, int p1) {
-        Color c0 = new Color(image.getRGB(getX(p0), getY(p0)));
-        Color c1 = new Color(image.getRGB(getX(p1), getY(p1)));
+    public double conn() {
+        //TODO
+        return 0;
+    }
+
+    private Color getCentroidColor (ArrayList<Integer> segment) {
+        int r = 0;
+        int g = 0;
+        int b = 0;
+        for (Integer pixel: segment) {
+            Color c = getColor(pixel);
+            r += c.getRed();
+            g += c.getGreen();
+            b += c.getBlue();
+        }
+        r /= segment.size();
+        g /= segment.size();
+        b /= segment.size();
+        return new Color(r, g, b);
+    }
+
+    private double colorDist(Color c0, Color c1) {
         int dR = c1.getRed()-c0.getRed();
         int dG = c1.getGreen()-c0.getGreen();
         int dB = c1.getBlue()-c0.getBlue();
         double dist = Math.sqrt(Math.pow(dR, 2.0) + Math.pow(dG, 2.0) + Math.pow(dB, 2.0));
         return dist;
+    }
+
+    private Color getColor(int pxNum) {
+        return new Color(image.getRGB(getX(pxNum), getY(pxNum)));
+    }
+
+    private int getRGB(int pxNum) {
+        return image.getRGB(getX(pxNum), getY(pxNum));
     }
 
     private int getX(int pxNum) {
