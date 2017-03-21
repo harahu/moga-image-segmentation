@@ -5,49 +5,51 @@ import com.sun.javafx.geom.Edge;
 import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Random;
+import java.io.InputStreamReader;
+import java.util.*;
 
 public class Main {
     public static void main(String[] args) {
-        BufferedImage img = getImage("./TestImage/2/Test Image.jpg");
+        System.out.println("Which image do you wish to work on?");
+
+        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+
+        String filename = "";
+        String input = "";
+
+        try {
+            input = br.readLine();
+        } catch (IOException ex) {
+            System.err.println("IOException reading file identifier.");
+            ex.printStackTrace();
+            input = "test";
+        }
+
+        input = input.trim();
+
+        if(input.equals("test") || input.equals("Test") || input.equals("t")) filename = "./simple_image.jpg";
+        else {
+            filename = "./TestImage/"+input+"/Test image.jpg";
+        }
+
+        System.out.println(filename);
+
+        BufferedImage img = getImage(filename);
 
         Random randomizer = new Random();
         ArrayList<EdgeCost> mst = generateMST(img.getWidth(), img.getHeight(), img, randomizer);
 
         int[] dimst = createDiMST(mst, img.getWidth(), img.getHeight());
 
-        System.out.println(Arrays.toString(dimst));
-
         Collections.sort(mst);
         ArrayList<int[]> population = new ArrayList<>();
 
         int sz = img.getHeight()*img.getWidth();
 
-        /*
-        for(int i = 0; i < 60; ++i) {
-            int[] genotype = new int[sz];
-            System.arraycopy(dimst, 0, genotype, 0, dimst.length);
-
-            for(int j = 0; j < i; ++j) {
-                EdgeCost edge = mst.get(mst.size()-1-j);
-                int a = edge.getA();
-                int b = edge.getB();
-
-                if(genotype[a] == b) genotype[a] = a;
-                else if(genotype[b] == a) genotype[b] = b;
-                else System.out.println("EDGE PROBLEM IN DIMST");
-            }
-
-            population.add(genotype);
-        }
-        */
-
-        for(int i = 0; i < 60; ++i) {
+        for(int i = 0; i < 100; ++i) {
             int[] genotype = new int[sz];
             System.arraycopy(dimst, 0, genotype, 0, dimst.length);
 
@@ -62,9 +64,10 @@ public class Main {
             population.add(genotype);
         }
 
-        SegmentationPhenotype seg = new SegmentationPhenotype(img, population.get(59));
+        SegmentationPhenotype seg = new SegmentationPhenotype(img, population.get(99));
 
         seg.drawSegmentation();
+        System.exit(0);
     }
 
     public static BufferedImage getImage(String pathName) {
