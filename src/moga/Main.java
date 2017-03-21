@@ -1,5 +1,7 @@
 package moga;
 
+import com.sun.javafx.geom.Edge;
+
 import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
@@ -12,6 +14,57 @@ import java.util.Random;
 
 public class Main {
     public static void main(String[] args) {
+        BufferedImage img = getImage("./TestImage/2/Test Image.jpg");
+
+        Random randomizer = new Random();
+        ArrayList<EdgeCost> mst = generateMST(img.getWidth(), img.getHeight(), img, randomizer);
+
+        int[] dimst = createDiMST(mst, img.getWidth(), img.getHeight());
+
+        System.out.println(Arrays.toString(dimst));
+
+        Collections.sort(mst);
+        ArrayList<int[]> population = new ArrayList<>();
+
+        int sz = img.getHeight()*img.getWidth();
+
+        /*
+        for(int i = 0; i < 60; ++i) {
+            int[] genotype = new int[sz];
+            System.arraycopy(dimst, 0, genotype, 0, dimst.length);
+
+            for(int j = 0; j < i; ++j) {
+                EdgeCost edge = mst.get(mst.size()-1-j);
+                int a = edge.getA();
+                int b = edge.getB();
+
+                if(genotype[a] == b) genotype[a] = a;
+                else if(genotype[b] == a) genotype[b] = b;
+                else System.out.println("EDGE PROBLEM IN DIMST");
+            }
+
+            population.add(genotype);
+        }
+        */
+
+        for(int i = 0; i < 60; ++i) {
+            int[] genotype = new int[sz];
+            System.arraycopy(dimst, 0, genotype, 0, dimst.length);
+
+            for(int j = 0; j < i; ++j) {
+                int a = (int)(randomizer.nextDouble() * (double)sz);
+
+                while(genotype[a] == a) a = (int)(randomizer.nextDouble() * (double)sz);
+
+                genotype[a] = a;
+            }
+
+            population.add(genotype);
+        }
+
+        SegmentationPhenotype seg = new SegmentationPhenotype(img, population.get(59));
+
+        seg.drawSegmentation();
     }
 
     public static BufferedImage getImage(String pathName) {
@@ -24,61 +77,53 @@ public class Main {
         return img;
     }
 
-    public static ArrayList<EdgeCost> getEdgeCosts(int x_sz, int y_sz, BufferedImage img) {
+    public static int[] createDiMST(ArrayList<EdgeCost> mst, int x_sz, int y_sz) {
         int sz = x_sz*y_sz;
-        ArrayList<EdgeCost> edges = new ArrayList<>();
 
+        int[] directed_mst = new int[sz];
+        Arrays.fill(directed_mst, -1);
+
+        ArrayList<ArrayList<Integer>> edges = new ArrayList<>();
         for(int i = 0; i < sz; ++i) {
-            if(i % x_sz != x_sz-1) {
-                int a = i;
-                int b = i+1;
+            edges.add(new ArrayList<>());
+        }
 
-                int x, y;
+        int len = mst.size();
+        for(int i = 0; i < len; ++i) {
+            int a = mst.get(i).getA();
+            int b = mst.get(i).getB();
 
-                x = i%x_sz;
-                y = i/x_sz;
-                Color c_0 = new Color(img.getRGB(x,y));
+            edges.get(a).add(b);
+            edges.get(b).add(a);
+        }
 
-                x = (i+1)%x_sz;
-                y = (i+1)/x_sz;
-                Color c_1 = new Color(img.getRGB(x,y));
+        int index_set = 0;
+        while(index_set < sz-1) {
+            for(int i = 0; i < sz; ++i) {
+                if(edges.get(i).size() == 1) {
+                    int val = edges.get(i).remove(0);
+                    directed_mst[i] = val;
 
-                double r_dist = c_0.getRed()-c_1.getRed();
-                double g_dist = c_0.getGreen()-c_1.getGreen();
-                double b_dist = c_0.getBlue()-c_1.getBlue();
+                    for(int j = 0; j < edges.get(val).size(); ++j) {
+                        if(edges.get(val).get(j) == i) {
+                            edges.get(val).remove(j);
+                            break;
+                        }
+                    }
 
-                int cost = (int)Math.pow(r_dist, 2) + (int)Math.pow(g_dist, 2) + (int)Math.pow(b_dist, 2);
-
-                EdgeCost edge = new EdgeCost(a,b,cost);
-                edges.add(edge);
-            }
-
-            if(i+x_sz < sz) {
-                int a  = i;
-                int b = i+x_sz;
-
-                int x, y;
-
-                x = i%x_sz;
-                y = i/x_sz;
-                Color c_0 = new Color(img.getRGB(x,y));
-
-                x = (i+1)%x_sz;
-                y = (i+1)/x_sz;
-                Color c_1 = new Color(img.getRGB(x,y));
-
-                double r_dist = c_0.getRed()-c_1.getRed();
-                double g_dist = c_0.getGreen()-c_1.getGreen();
-                double b_dist = c_0.getBlue()-c_1.getBlue();
-
-                int cost = (int)Math.pow(r_dist, 2) + (int)Math.pow(g_dist, 2) + (int)Math.pow(b_dist, 2);
-
-                EdgeCost edge = new EdgeCost(a,b,cost);
-                edges.add(edge);
+                    index_set++;
+                }
             }
         }
 
-        return edges;
+        for(int i = 0; i < sz; ++i) {
+            if(directed_mst[i] == -1) {
+                directed_mst[i] = i;
+                break;
+            }
+        }
+
+        return directed_mst;
     }
 
     public static int getEdgeCost(int a, int b, int x_sz, BufferedImage img) {
