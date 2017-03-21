@@ -12,6 +12,85 @@ import java.util.Random;
 
 public class Main {
     public static void main(String[] args) {
+        BufferedImage img = getImage("./Test Image/1/Test image.jpg");
+
+        int[] n = nSeg(img.getWidth(), img.getHeight());
+        int[] one = oneSeg(img.getWidth(), img.getHeight());
+        int[] two = twoSeg(img.getWidth(), img.getHeight());
+        ArrayList<int[]> initPop = new ArrayList<>();
+        initPop.add(n);
+        initPop.add(one);
+        initPop.add(two);
+        spea(initPop, img);
+    }
+
+    public static ArrayList<SegmentationGenotype> spea(ArrayList<int[]> initialPop, BufferedImage img) {
+        ArrayList<SegmentationGenotype> population = new ArrayList<SegmentationGenotype>();
+        ArrayList<SegmentationGenotype> archive = new ArrayList<SegmentationGenotype>();
+        //Initialize population
+        for (int[] genome: initialPop) {
+            population.add(new SegmentationGenotype(img, genome));
+        }
+        int t = 0;
+        //Sort population
+        int[] popRanking = fastNonDominatedSort(population);
+        for (int rnk: popRanking) {
+            System.out.println(rnk);
+        }
+        return population;
+    }
+
+    public static int[] fastNonDominatedSort(ArrayList<SegmentationGenotype> population) {
+
+        int[] ranking = new int[population.size()];
+        Arrays.fill(ranking, -1);
+
+        int[] domCounts = new int[population.size()];
+
+        ArrayList<ArrayList<Integer>> dominationLists = new ArrayList<>();
+
+        for (int i = 0; i < population.size(); i++) {
+            SegmentationGenotype p = population.get(i);
+            ArrayList<Integer> dominated = new ArrayList<>();
+            int domCount = 0;
+            for (int j = 0; j < population.size(); j++) {
+                SegmentationGenotype q = population.get(j);
+                if (p.dominates(q)) {
+                    dominated.add(j);
+                }
+                else if (q.dominates(p)) {
+                    domCount++;
+                }
+            }
+            if (domCount == 0) {
+                ranking[i] = 0;
+            }
+            dominationLists.add(dominated);
+            domCounts[i] = domCount;
+        }
+        int i = 0;
+        ArrayList<Integer> front = new ArrayList<>();
+        for (int j = 0; j < ranking.length; j++) {
+            if (ranking[j] == 0) {
+                front.add(j);
+            }
+        }
+        while (front.size() > 0) {
+            ArrayList<Integer> Q = new ArrayList<>();
+            for (int j = 0; j < front.size(); j++) {
+                int pIndex = front.get(j);
+                for (int qIndex: dominationLists.get(pIndex)) {
+                    domCounts[qIndex]--;
+                    if (domCounts[qIndex] == 0) {
+                        ranking[qIndex] = i+1;
+                        Q.add(qIndex);
+                    }
+                }
+            }
+            i++;
+            front = Q;
+        }
+        return ranking;
     }
 
     public static BufferedImage getImage(String pathName) {
