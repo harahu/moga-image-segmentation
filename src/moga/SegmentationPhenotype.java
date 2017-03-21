@@ -10,6 +10,10 @@ public class SegmentationPhenotype {
     private ArrayList<ArrayList<Integer>> segments;
     private BufferedImage image;
     private int[] segment_alloc;
+    private Double dev;
+    private Double edge;
+    private Double conn;
+
 
     public SegmentationPhenotype(BufferedImage img, int[] genotype) {
         this.createSegments(genotype);
@@ -65,7 +69,15 @@ public class SegmentationPhenotype {
             System.out.println(segments.get(i).toString());
         }
     }
-    public double dev() {
+
+    public double getDev() {
+        if (dev == null) {
+            dev = dev();
+        }
+        return dev;
+    }
+
+    private double dev() {
         double dev = 0;
         for (ArrayList<Integer> segment: segments) {
             Color centroidColor = getCentroidColor(segment);
@@ -77,7 +89,14 @@ public class SegmentationPhenotype {
         return dev;
     }
 
-    public double edge() {
+    public double getEdge() {
+        if (edge == null) {
+            edge = edge();
+        }
+        return edge;
+    }
+
+    private double edge() {
         double edge = 0;
         for(int pixel = 0; pixel < segment_alloc.length; pixel++) {
             Color pixelColor = getColor(pixel);
@@ -95,8 +114,15 @@ public class SegmentationPhenotype {
         return -edge;
     }
 
-    public double conn() {
-        int conn = 0;
+    public double getConn() {
+        if (conn == null) {
+            conn = conn();
+        }
+        return conn;
+    }
+
+    private double conn() {
+        double conn = 0;
         for(int pixel = 0; pixel < segment_alloc.length; pixel++) {
             int j = 0;
             for (int neighbour: neighbourhood(pixel)) {
