@@ -1,9 +1,6 @@
 package moga;
 
-import sun.misc.*;
-
 import javax.imageio.ImageIO;
-import javax.swing.*;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
@@ -15,11 +12,6 @@ import java.util.Random;
 
 public class Main {
     public static void main(String[] args) {
-        BufferedImage img = getImage("./TestImage/1/Test image.jpg");
-
-        System.out.println("("+Integer.toString(img.getWidth())+","+Integer.toString(img.getHeight())+")");
-
-        int[] mst = generateMST(img.getWidth(), img.getHeight(), img, new Random());
     }
 
     public static BufferedImage getImage(String pathName) {
@@ -27,6 +19,7 @@ public class Main {
         try {
             img = ImageIO.read(new File(pathName));
         } catch (IOException e) {
+            System.out.println("what");
         }
         return img;
     }
@@ -162,5 +155,33 @@ public class Main {
         }
 
         return mst;
+    }
+
+    public static int[] nSeg(int x_sz, int y_sz) {
+        int sz = x_sz*y_sz;
+        int[] genome = new int[sz];
+        for (int i = 0; i < sz; i++) {
+            genome[i] = i;
+        }
+        return genome;
+    }
+
+    public static int[] oneSeg(int x_sz, int y_sz) {
+        int sz = x_sz*y_sz;
+        int[] genome = new int[sz];
+        for (int i = 0; i < sz-1; i++) {
+            genome[i] = i+1;
+        }
+        for (int i = x_sz-1; i < sz-1; i += x_sz) {
+            genome[i] = i+x_sz;
+        }
+        genome[sz-1] = sz-1;
+        return genome;
+    }
+
+    public static  int[] twoSeg(int x_sz, int y_sz){
+        int[] genome = oneSeg(x_sz, y_sz);
+        genome[(x_sz-1)+x_sz*(y_sz/2)] = (x_sz-1)+x_sz*(y_sz/2);
+        return genome;
     }
 }
