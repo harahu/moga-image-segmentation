@@ -1,27 +1,75 @@
 package moga;
 
+import com.sun.javafx.geom.Edge;
+
 import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Random;
+import java.io.InputStreamReader;
+import java.util.*;
 
 public class Main {
     public static void main(String[] args) {
-        BufferedImage img = getImage("./Test Image/1/Test image.jpg");
+        System.out.println("Which image do you wish to work on?");
 
-        int[] n = nSeg(img.getWidth(), img.getHeight());
-        int[] one = oneSeg(img.getWidth(), img.getHeight());
-        int[] two = twoSeg(img.getWidth(), img.getHeight());
-        ArrayList<int[]> initPop = new ArrayList<>();
-        initPop.add(n);
-        initPop.add(one);
-        initPop.add(two);
-        spea(initPop, img);
+        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+
+        String filename = "";
+        String input = "";
+
+        try {
+            input = br.readLine();
+        } catch (IOException ex) {
+            System.err.println("IOException reading file identifier.");
+            ex.printStackTrace();
+            input = "test";
+        }
+
+        input = input.trim();
+
+        if(input.equals("test") || input.equals("Test") || input.equals("t")) filename = "./simple_image.jpg";
+        else {
+            filename = "./TestImage/"+input+"/Test image.jpg";
+        }
+
+        System.out.println(filename);
+
+        BufferedImage img = getImage(filename);
+
+        Random randomizer = new Random();
+        ArrayList<EdgeCost> mst = generateMST(img.getWidth(), img.getHeight(), img, randomizer);
+
+        int[] dimst = createDiMST(mst, img.getWidth(), img.getHeight());
+
+        Collections.sort(mst);
+        ArrayList<int[]> population = new ArrayList<>();
+
+        int sz = img.getHeight()*img.getWidth();
+
+        for(int i = 0; i < 100; ++i) {
+            int[] genotype = new int[sz];
+            System.arraycopy(dimst, 0, genotype, 0, dimst.length);
+
+            for(int j = 0; j < i; ++j) {
+                int a = (int)(randomizer.nextDouble() * (double)sz);
+
+                while(genotype[a] == a) a = (int)(randomizer.nextDouble() * (double)sz);
+
+                genotype[a] = a;
+            }
+
+            population.add(genotype);
+        }
+
+        spea(population, img);
+
+        SegmentationPhenotype seg = new SegmentationPhenotype(img, population.get(99));
+
+        seg.drawSegmentation();
+        System.exit(0);
     }
 
     public static ArrayList<SegmentationGenotype> spea(ArrayList<int[]> initialPop, BufferedImage img) {
@@ -57,8 +105,7 @@ public class Main {
                 SegmentationGenotype q = population.get(j);
                 if (p.dominates(q)) {
                     dominated.add(j);
-                }
-                else if (q.dominates(p)) {
+                } else if (q.dominates(p)) {
                     domCount++;
                 }
             }
@@ -79,10 +126,10 @@ public class Main {
             ArrayList<Integer> Q = new ArrayList<>();
             for (int j = 0; j < front.size(); j++) {
                 int pIndex = front.get(j);
-                for (int qIndex: dominationLists.get(pIndex)) {
+                for (int qIndex : dominationLists.get(pIndex)) {
                     domCounts[qIndex]--;
                     if (domCounts[qIndex] == 0) {
-                        ranking[qIndex] = i+1;
+                        ranking[qIndex] = i + 1;
                         Q.add(qIndex);
                     }
                 }
@@ -103,61 +150,53 @@ public class Main {
         return img;
     }
 
-    public static ArrayList<EdgeCost> getEdgeCosts(int x_sz, int y_sz, BufferedImage img) {
+    public static int[] createDiMST(ArrayList<EdgeCost> mst, int x_sz, int y_sz) {
         int sz = x_sz*y_sz;
-        ArrayList<EdgeCost> edges = new ArrayList<>();
 
+        int[] directed_mst = new int[sz];
+        Arrays.fill(directed_mst, -1);
+
+        ArrayList<ArrayList<Integer>> edges = new ArrayList<>();
         for(int i = 0; i < sz; ++i) {
-            if(i % x_sz != x_sz-1) {
-                int a = i;
-                int b = i+1;
+            edges.add(new ArrayList<>());
+        }
 
-                int x, y;
+        int len = mst.size();
+        for(int i = 0; i < len; ++i) {
+            int a = mst.get(i).getA();
+            int b = mst.get(i).getB();
 
-                x = i%x_sz;
-                y = i/x_sz;
-                Color c_0 = new Color(img.getRGB(x,y));
+            edges.get(a).add(b);
+            edges.get(b).add(a);
+        }
 
-                x = (i+1)%x_sz;
-                y = (i+1)/x_sz;
-                Color c_1 = new Color(img.getRGB(x,y));
+        int index_set = 0;
+        while(index_set < sz-1) {
+            for(int i = 0; i < sz; ++i) {
+                if(edges.get(i).size() == 1) {
+                    int val = edges.get(i).remove(0);
+                    directed_mst[i] = val;
 
-                double r_dist = c_0.getRed()-c_1.getRed();
-                double g_dist = c_0.getGreen()-c_1.getGreen();
-                double b_dist = c_0.getBlue()-c_1.getBlue();
+                    for(int j = 0; j < edges.get(val).size(); ++j) {
+                        if(edges.get(val).get(j) == i) {
+                            edges.get(val).remove(j);
+                            break;
+                        }
+                    }
 
-                int cost = (int)Math.pow(r_dist, 2) + (int)Math.pow(g_dist, 2) + (int)Math.pow(b_dist, 2);
-
-                EdgeCost edge = new EdgeCost(a,b,cost);
-                edges.add(edge);
-            }
-
-            if(i+x_sz < sz) {
-                int a  = i;
-                int b = i+x_sz;
-
-                int x, y;
-
-                x = i%x_sz;
-                y = i/x_sz;
-                Color c_0 = new Color(img.getRGB(x,y));
-
-                x = (i+1)%x_sz;
-                y = (i+1)/x_sz;
-                Color c_1 = new Color(img.getRGB(x,y));
-
-                double r_dist = c_0.getRed()-c_1.getRed();
-                double g_dist = c_0.getGreen()-c_1.getGreen();
-                double b_dist = c_0.getBlue()-c_1.getBlue();
-
-                int cost = (int)Math.pow(r_dist, 2) + (int)Math.pow(g_dist, 2) + (int)Math.pow(b_dist, 2);
-
-                EdgeCost edge = new EdgeCost(a,b,cost);
-                edges.add(edge);
+                    index_set++;
+                }
             }
         }
 
-        return edges;
+        for(int i = 0; i < sz; ++i) {
+            if(directed_mst[i] == -1) {
+                directed_mst[i] = i;
+                break;
+            }
+        }
+
+        return directed_mst;
     }
 
     public static int getEdgeCost(int a, int b, int x_sz, BufferedImage img) {
@@ -262,5 +301,53 @@ public class Main {
         int[] genome = oneSeg(x_sz, y_sz);
         genome[(x_sz-1)+x_sz*(y_sz/2)] = (x_sz-1)+x_sz*(y_sz/2);
         return genome;
+    }
+
+    public static int[][] uniformCrossover(int[] parent_1, int[] parent_2, Random randomizer) {
+        int[][] children = new int[2][parent_1.length];
+
+        for(int i = 0; i < parent_1.length; ++i) {
+            if(randomizer.nextDouble() <= 0.5) {
+                children[0][i] = parent_1[i];
+                children[1][i] = parent_2[i];
+            } else {
+                children[0][i] = parent_2[i];
+                children[1][i] = parent_1[i];
+            }
+        }
+
+        return children;
+    }
+
+    public static int[] switchMutation(int[] genotype_in, Random randomizer, double mutation_rate, int x_sz, int y_sz) {
+        int[] mutant = new int[genotype_in.length];
+
+        for(int i = 0; i < genotype_in.length; ++i) {
+            int[] neighbours;
+            if(randomizer.nextDouble() > mutation_rate) {
+                mutant[i] = genotype_in[i];
+            } else {
+                neighbours = SegmentationPhenotype.neighbourhood(i, x_sz, y_sz);
+                int count = 0;
+                for(int j = 0; j < neighbours.length; ++j) {
+                    if(neighbours[j] != -1) ++count;
+                }
+
+                int num = (int)(randomizer.nextDouble()*count);
+                count = 0;
+                for(int j = 0; j < neighbours.length; ++j) {
+                    if(neighbours[j] != -1) {
+                        if(count == num) {
+                            mutant[i] = neighbours[j];
+                            break;
+                        } else {
+                            ++count;
+                        }
+                    }
+                }
+            }
+        }
+
+        return mutant;
     }
 }

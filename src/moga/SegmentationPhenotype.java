@@ -182,9 +182,12 @@ public class SegmentationPhenotype {
         return conn;
     }
 
-    private Integer[] neighbourhood(int pixel) {
-        int w = image.getWidth();
-        Integer[] nh = new Integer[4];
+    private int[] neighbourhood(int pixel) {
+        return neighbourhood(pixel, image.getWidth(), image.getHeight());
+    }
+
+    public static int[] neighbourhood(int pixel, int w, int h) {
+        int[] nh = new int[4];
         nh[0] = pixel - w;
         nh[1] = pixel + 1;
         nh[2] = pixel + w;
@@ -193,7 +196,7 @@ public class SegmentationPhenotype {
         if (pixel < w) {
             nh[0] = -1;
         }
-        else if (pixel / w >= image.getHeight() - 1) {
+        else if (pixel / w >= h - 1) {
             nh[2] = -1;
         }
         // on left or right edge
