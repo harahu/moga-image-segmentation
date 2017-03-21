@@ -333,18 +333,20 @@ public class Main {
                     if(neighbours[j] != -1) ++count;
                 }
 
-                int num = (int)(randomizer.nextDouble()*count);
-                count = 0;
+                int num = (int)(randomizer.nextDouble()*(count+1));
+
+                int second_count = 0;
                 for(int j = 0; j < neighbours.length; ++j) {
                     if(neighbours[j] != -1) {
-                        if(count == num) {
+                        if(second_count == num) {
                             mutant[i] = neighbours[j];
                             break;
                         } else {
-                            ++count;
+                            ++second_count;
                         }
                     }
                 }
+                if(second_count == count) mutant[i] = i;
             }
         }
 
