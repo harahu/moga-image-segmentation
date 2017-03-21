@@ -65,7 +65,7 @@ public class SegmentationPhenotype {
             System.out.println(segments.get(i).toString());
         }
     }
-    public double overallDeviation() {
+    public double dev() {
         double dev = 0;
         for (ArrayList<Integer> segment: segments) {
             Color centroidColor = getCentroidColor(segment);
@@ -78,13 +78,66 @@ public class SegmentationPhenotype {
     }
 
     public double edge() {
-        //TODO
-        return 0;
+        double edge = 0;
+        for(int pixel = 0; pixel < segment_alloc.length; pixel++) {
+            Color pixelColor = getColor(pixel);
+            for (Integer neighbour: neighbourhood(pixel)) {
+                if (neighbour == -1) {
+                    continue;
+                }
+                // if not in same segment
+                if (segment_alloc[pixel] != segment_alloc[neighbour]) {
+                    Color neighbourColor = getColor(neighbour);
+                    edge += colorDist(pixelColor, neighbourColor);
+                }
+            }
+        }
+        return -edge;
     }
 
     public double conn() {
-        //TODO
-        return 0;
+        int conn = 0;
+        for(int pixel = 0; pixel < segment_alloc.length; pixel++) {
+            int j = 0;
+            for (int neighbour: neighbourhood(pixel)) {
+                if (neighbour == -1) {
+                    continue;
+                }
+                // if not in same segment
+                if (segment_alloc[pixel] != segment_alloc[neighbour]) {
+                    j++;
+                }
+            }
+            while (j >= 1) {
+                conn += 1/j;
+                j--;
+            }
+        }
+        return conn;
+    }
+
+    private Integer[] neighbourhood(int pixel) {
+        int w = image.getWidth();
+        Integer[] nh = new Integer[4];
+        nh[0] = pixel - w;
+        nh[1] = pixel + 1;
+        nh[2] = pixel + w;
+        nh[3] = pixel - 1;
+        //on top or bottom edge?
+        if (pixel < w) {
+            nh[0] = -1;
+        }
+        else if (pixel / w >= image.getHeight() - 1) {
+            nh[2] = -1;
+        }
+        // on left or right edge
+        if (pixel % w == 0) {
+            nh[3] = -1;
+        }
+        else if (pixel % w == w - 1) {
+            nh[1] = -1;
+        }
+        return nh;
     }
 
     private Color getCentroidColor (ArrayList<Integer> segment) {
@@ -111,19 +164,19 @@ public class SegmentationPhenotype {
         return dist;
     }
 
-    private Color getColor(int pxNum) {
-        return new Color(image.getRGB(getX(pxNum), getY(pxNum)));
+    private Color getColor(int pixel) {
+        return new Color(image.getRGB(getX(pixel), getY(pixel)));
     }
 
-    private int getRGB(int pxNum) {
-        return image.getRGB(getX(pxNum), getY(pxNum));
+    private int getRGB(int pixel) {
+        return image.getRGB(getX(pixel), getY(pixel));
     }
 
-    private int getX(int pxNum) {
-        return pxNum % image.getWidth();
+    private int getX(int pixel) {
+        return pixel % image.getWidth();
     }
 
-    private int getY(int pxNum) {
-        return pxNum / image.getWidth();
+    private int getY(int pixel) {
+        return pixel / image.getWidth();
     }
 }
