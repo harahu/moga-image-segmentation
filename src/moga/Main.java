@@ -232,4 +232,52 @@ public class Main {
         genome[(x_sz-1)+x_sz*(y_sz/2)] = (x_sz-1)+x_sz*(y_sz/2);
         return genome;
     }
+
+    public static int[][] uniformCrossover(int[] parent_1, int[] parent_2, Random randomizer) {
+        int[][] children = new int[2][parent_1.length];
+
+        for(int i = 0; i < parent_1.length; ++i) {
+            if(randomizer.nextDouble() <= 0.5) {
+                children[0][i] = parent_1[i];
+                children[1][i] = parent_2[i];
+            } else {
+                children[0][i] = parent_2[i];
+                children[1][i] = parent_1[i];
+            }
+        }
+
+        return children;
+    }
+
+    public static int[] switchMutation(int[] genotype_in, Random randomizer, double mutation_rate, int x_sz, int y_sz) {
+        int[] mutant = new int[genotype_in.length];
+
+        for(int i = 0; i < genotype_in.length; ++i) {
+            int[] neighbours;
+            if(randomizer.nextDouble() > mutation_rate) {
+                mutant[i] = genotype_in[i];
+            } else {
+                neighbours = SegmentationPhenotype.neighbourhood(i, x_sz, y_sz);
+                int count = 0;
+                for(int j = 0; j < neighbours.length; ++j) {
+                    if(neighbours[j] != -1) ++count;
+                }
+
+                int num = (int)(randomizer.nextDouble()*count);
+                count = 0;
+                for(int j = 0; j < neighbours.length; ++j) {
+                    if(neighbours[j] != -1) {
+                        if(count == num) {
+                            mutant[i] = neighbours[j];
+                            break;
+                        } else {
+                            ++count;
+                        }
+                    }
+                }
+            }
+        }
+
+        return mutant;
+    }
 }
