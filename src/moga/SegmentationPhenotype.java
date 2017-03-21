@@ -1,7 +1,10 @@
 package moga;
 
+import javax.swing.*;
 import java.awt.*;
 import java.awt.image.BufferedImage;
+import java.awt.image.ColorModel;
+import java.awt.image.WritableRaster;
 import java.util.ArrayList;
 import java.util.Arrays;
 
@@ -68,6 +71,43 @@ public class SegmentationPhenotype {
             System.out.println("Segment " + Integer.toString(i) + ":");
             System.out.println(segments.get(i).toString());
         }
+    }
+
+    public void drawSegmentation() {
+        JFrame frame = new JFrame();
+        frame.getContentPane().setLayout(new FlowLayout());
+        frame.getContentPane().add(new JLabel(new ImageIcon(image)));
+        frame.getContentPane().add(new JLabel(new ImageIcon(segmentedImage())));
+        frame.getContentPane().add(new JLabel(new ImageIcon(segmentationImage())));
+        frame.pack();
+        frame.setVisible(true);
+    }
+
+    private BufferedImage segmentedImage() {
+        BufferedImage segImg = bIdeepCopy(image);
+        for (int pixel = 0; pixel < segment_alloc.length; pixel++) {
+            if (isBorderPixel(pixel)) {
+                segImg.setRGB(getX(pixel), getY(pixel), Color.GREEN.getRGB());
+            }
+        }
+        return segImg;
+    }
+
+    private BufferedImage segmentationImage() {
+        BufferedImage segImg = bIdeepCopy(image);
+        for (int pixel = 0; pixel < segment_alloc.length; pixel++) {
+            if (isBorderPixel(pixel)) {
+                segImg.setRGB(getX(pixel), getY(pixel), Color.BLACK.getRGB());
+            }
+            else {
+                segImg.setRGB(getX(pixel), getY(pixel), Color.WHITE.getRGB());
+            }
+        }
+        return segImg;
+    }
+
+    public  void printSegmentNum() {
+        System.out.println(segments.size());
     }
 
     public double getDev() {
@@ -204,5 +244,28 @@ public class SegmentationPhenotype {
 
     private int getY(int pixel) {
         return pixel / image.getWidth();
+    }
+
+    private boolean isBorderPixel(int pixel) {
+        boolean borderPx = false;
+        for (Integer neighbour: neighbourhood(pixel)) {
+            if (neighbour == -1) {
+                borderPx = true;
+                break;
+            }
+            // if not in same segment
+            if (segment_alloc[pixel] != segment_alloc[neighbour]) {
+                borderPx = true;
+                break;
+            }
+        }
+        return borderPx;
+    }
+
+    static BufferedImage bIdeepCopy(BufferedImage bi) {
+        ColorModel cm = bi.getColorModel();
+        boolean isAlphaPremultiplied = cm.isAlphaPremultiplied();
+        WritableRaster raster = bi.copyData(null);
+        return new BufferedImage(cm, raster, isAlphaPremultiplied, null);
     }
 }
