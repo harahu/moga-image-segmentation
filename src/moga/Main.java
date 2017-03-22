@@ -1,9 +1,10 @@
 package moga;
 
 import com.sun.javafx.geom.Edge;
+import org.jzy3d.analysis.AnalysisLauncher;
 
 import javax.imageio.ImageIO;
-import java.awt.*;
+import java.awt.Color;
 import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
 import java.io.File;
@@ -90,6 +91,14 @@ public class Main {
         System.out.println("-------------");
         System.out.println(finalPop.size());
         System.out.println("-------------");
+        //DRAWING
+        try {
+            AnalysisLauncher.open(new Plotter(finalPop));
+        } catch(Exception ex) {
+            System.err.println("ERROR PLOTTING");
+            ex.printStackTrace();
+        }
+        //END
         for (SegmentationGenotype p: finalPop) {
             p.getPhenotype().drawSegmentation();
         }
