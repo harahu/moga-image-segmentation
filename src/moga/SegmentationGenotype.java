@@ -8,12 +8,14 @@ public class SegmentationGenotype {
     private int[] genome;
     private SegmentationPhenotype phenotype;
     private ArrayList<SegmentationGenotype> domSet;
+    private boolean[] objectives;
     private double distance;
     private double rawFitness;
     private double density;
     private double fitness;
 
-    public SegmentationGenotype(BufferedImage img, int[] genotype) {
+    public SegmentationGenotype(BufferedImage img, int[] genotype, boolean[] activeObjectives) {
+        objectives = activeObjectives; //dev edge conn
         genome = genotype;
         phenotype = new SegmentationPhenotype(img, genome);
     }
@@ -35,9 +37,20 @@ public class SegmentationGenotype {
     }
 
     public void setDistance(SegmentationGenotype p) {
-        double dDev = phenotype.getDev() - p.getPhenotype().getDev();
-        double dEdge = phenotype.getEdge() - p.getPhenotype().getEdge();
-        double dConn = phenotype.getConn() - p.getPhenotype().getConn();
+        double dDev = 0.0;
+        double dEdge = 0.0;
+        double dConn = 0.0;
+
+        if (objectives[0]) {
+            dDev = phenotype.getDev() - p.getPhenotype().getDev();
+        }
+        if (objectives[1]) {
+            dEdge = phenotype.getEdge() - p.getPhenotype().getEdge();
+        }
+        if (objectives[2]) {
+            dConn = phenotype.getConn() - p.getPhenotype().getConn();
+        }
+
         distance = Math.sqrt(Math.pow(dDev, 2.0) + Math.pow(dEdge, 2.0) + Math.pow(dConn, 2.0));
     }
 
@@ -71,14 +84,23 @@ public class SegmentationGenotype {
 
     public boolean dominates(SegmentationGenotype q) {
         SegmentationPhenotype qPhen = q.getPhenotype();
-        if (phenotype.getConn() > qPhen.getConn()) {
-            return false;
+
+        if (objectives[0]) {
+            if (phenotype.getDev() > qPhen.getDev()) {
+                return false;
+            }
         }
-        if (phenotype.getEdge() > qPhen.getEdge()) {
-            return false;
+
+        if (objectives[1]) {
+            if (phenotype.getEdge() > qPhen.getEdge()) {
+                return false;
+            }
         }
-        if (phenotype.getDev() > qPhen.getDev()) {
-            return false;
+
+        if (objectives[2]) {
+            if (phenotype.getConn() > qPhen.getConn()) {
+                return false;
+            }
         }
         return true;
     }
