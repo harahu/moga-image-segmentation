@@ -34,7 +34,7 @@ public class Plotter extends AbstractAnalysis {
             z = (float)ind.getPhenotype().getEdge();
             a = 0.75f;
             points[i] = new Coord3d(x,y,z);
-            colors[i] = new org.jzy3d.colors.Color(x,y,z,a);
+            colors[i] = new org.jzy3d.colors.Color(0f,0f,0f,a);
             ++i;
         }
 
