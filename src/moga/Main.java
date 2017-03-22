@@ -39,6 +39,28 @@ public class Main {
 
         BufferedImage img = getImage(filename);
 
+        ArrayList<int[]> pop = run(img);
+
+        int[] individual = pop.get(8);
+
+        Random randomizer = new Random();
+
+        int[] mutant = switchMutation(individual, randomizer, 0.001, img.getWidth(), img.getHeight());
+
+        System.out.println(Arrays.toString(individual));
+        System.out.println(individual.length);
+        System.out.println(Arrays.toString(mutant));
+        System.out.println(mutant.length);
+
+        int[][] children = uniformCrossover(individual, mutant, randomizer);
+        System.out.println(Arrays.toString(children[0]));
+
+        SegmentationPhenotype seg = new SegmentationPhenotype(img, children[0]);
+
+        seg.drawSegmentation();
+    }
+
+    public static ArrayList<int[]> run(BufferedImage img) {
         Random randomizer = new Random();
         ArrayList<EdgeCost> mst = generateMST(img.getWidth(), img.getHeight(), img, randomizer);
 
@@ -68,8 +90,8 @@ public class Main {
 
         SegmentationPhenotype seg = new SegmentationPhenotype(img, population.get(99));
 
-        seg.drawSegmentation();
-        System.exit(0);
+        //seg.drawSegmentation();
+        return population;
     }
 
     public static int[] mutate(int[] genome) {
