@@ -41,11 +41,12 @@ public class Main {
 
         ArrayList<int[]> pop = run(img);
 
+        //from here
         int[] individual = pop.get(8);
 
         Random randomizer = new Random();
 
-        int[] mutant = switchMutation(individual, randomizer, 0.001, img.getWidth(), img.getHeight());
+        int[] mutant = switchMutation(individual, randomizer, img.getWidth(), img.getHeight());
 
         System.out.println(Arrays.toString(individual));
         System.out.println(individual.length);
@@ -85,17 +86,14 @@ public class Main {
 
             population.add(genotype);
         }
-
-        //ArrayList<SegmentationGenotype> finalPop = spea2(population, img);
-
-        SegmentationPhenotype seg = new SegmentationPhenotype(img, population.get(99));
-
-        //seg.drawSegmentation();
+        ArrayList<SegmentationGenotype> finalPop = strengthParetoEvolutionaryAlgorithm2(population, img, population.size(), population.size()/2, 50);
+        System.out.println("-------------");
+        System.out.println(finalPop.size());
+        System.out.println("-------------");
+        for (SegmentationGenotype p: finalPop) {
+            p.getPhenotype().drawSegmentation();
+        }
         return population;
-    }
-
-    public static int[] mutate(int[] genome) {
-        //TODO
     }
 
     public static int[] crossover(int[] p1, int[] p2, double rate) {
@@ -118,7 +116,7 @@ public class Main {
         return child;
     }
 
-    public static ArrayList<SegmentationGenotype> reproduce(ArrayList<SegmentationGenotype> selected, int popSize, double pCross) {
+    public static ArrayList<SegmentationGenotype> reproduce(ArrayList<SegmentationGenotype> selected, int popSize, double pCross, BufferedImage img) {
         ArrayList<SegmentationGenotype> children = new ArrayList<>();
         for (int i = 0; i < selected.size(); i++) {
             SegmentationGenotype p1 = selected.get(i);
@@ -133,9 +131,12 @@ public class Main {
                 p2 = selected.get(i-1);
             }
             int[] cGenome = crossover(p1.getGenome(), p2.getGenome(), pCross);
-            cGenome = mutate(cGenome);
-            //TODO: SegmentationGenotype child;
-            //TODO: children.add(child);
+            cGenome = switchMutation(cGenome, new Random(), img.getWidth(), img.getHeight());
+            SegmentationGenotype child = new SegmentationGenotype(img, cGenome);
+            children.add(child);
+            if (children.size() >= popSize) {
+                break;
+            }
         }
         return children;
     }
@@ -253,13 +254,15 @@ public class Main {
         }
 
         do {
+            System.out.println(gen);
             calculateFitness(population, archive);
             archive = environmentalSelection(population, archive, archiveSize);
             if (gen >= maxGen) {
                 break;
             }
             ArrayList<SegmentationGenotype> selected = binaryTournament(archive, popSize);
-            //TODO: population = reproduce(selected, popSize, )
+            double pCross = 1.0;
+            population = reproduce(selected, popSize, pCross, img);
             gen++;
         } while (true);
         return archive;
@@ -444,7 +447,8 @@ public class Main {
         return children;
     }
 
-    public static int[] switchMutation(int[] genotype_in, Random randomizer, double mutation_rate, int x_sz, int y_sz) {
+    public static int[] switchMutation(int[] genotype_in, Random randomizer, int x_sz, int y_sz) {
+        double mutation_rate = 3.0/(x_sz*y_sz);
         int[] mutant = new int[genotype_in.length];
 
         for(int i = 0; i < genotype_in.length; ++i) {

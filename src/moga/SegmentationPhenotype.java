@@ -81,7 +81,7 @@ public class SegmentationPhenotype {
         frame.getContentPane().add(new JLabel(new ImageIcon(segmentationImage())));
         frame.pack();
         frame.setVisible(true);
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        //frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
     }
 
     private BufferedImage segmentedImage() {
