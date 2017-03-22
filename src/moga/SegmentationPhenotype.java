@@ -75,6 +75,7 @@ public class SegmentationPhenotype {
 
     public void drawSegmentation() {
         JFrame frame = new JFrame();
+        frame.setTitle(getTitle());
         frame.getContentPane().setLayout(new FlowLayout());
         frame.getContentPane().add(new JLabel(new ImageIcon(image)));
         frame.getContentPane().add(new JLabel(new ImageIcon(segmentedImage())));
@@ -82,6 +83,18 @@ public class SegmentationPhenotype {
         frame.pack();
         frame.setVisible(true);
         //frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+    }
+
+    private String getTitle() {
+        String title = "Segmentation Number: ";
+        title += Integer.toString(getSegmentNum());
+        title += ", Dev: ";
+        title += Double.toString(getDev());
+        title += ", Edge: ";
+        title += Double.toString(getEdge());
+        title += ", Conn: ";
+        title += Double.toString(getConn());
+        return title;
     }
 
     private BufferedImage segmentedImage() {
@@ -109,6 +122,10 @@ public class SegmentationPhenotype {
 
     public  void printSegmentNum() {
         System.out.println(segments.size());
+    }
+
+    public int getSegmentNum() {
+        return segments.size();
     }
 
     public double getDev() {
@@ -236,10 +253,6 @@ public class SegmentationPhenotype {
 
     private Color getColor(int pixel) {
         return new Color(image.getRGB(getX(pixel), getY(pixel)));
-    }
-
-    private int getRGB(int pixel) {
-        return image.getRGB(getX(pixel), getY(pixel));
     }
 
     private int getX(int pixel) {

@@ -72,7 +72,40 @@ public class Main {
         objectives[2] = con;
 
         ArrayList<SegmentationGenotype> finalPop = strengthParetoEvolutionaryAlgorithm2(population, img, population.size(), population.size() / 2, numGen, mutRate, objectives);
-        //DRAWING
+        finalPop.sort((p1, p2) -> Double.compare(p1.getPhenotype().getSegmentNum(), p2.getPhenotype().getSegmentNum()));
+
+        LinkedHashSet<Integer> segmentationNumbers = new LinkedHashSet<>();
+        for (SegmentationGenotype p: finalPop) {
+            segmentationNumbers.add(p.getPhenotype().getSegmentNum());
+        }
+
+        System.out.println();
+        System.out.println("The final population has solutions of the following segmentation numbers:");
+        System.out.println(segmentationNumbers.toString());
+
+        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+
+        int segNum = 1;
+        while (segNum != -1) {
+            System.out.println("Enter number of interest (-1 to quit):");
+            try {
+                segNum = Integer.parseInt(br.readLine());
+            } catch (IOException ex) {
+                System.err.println("IOException reading segmentation number.");
+                ex.printStackTrace();
+                segNum = -1;
+            }
+
+            //DRAWING IMAGE SEGMENTATIONS
+            for (SegmentationGenotype p: finalPop) {
+                int sN = p.getPhenotype().getSegmentNum();
+                if (sN == segNum) {
+                    p.getPhenotype().drawSegmentation();
+                }
+            }
+        }
+
+        //DRAWING PARETO FRONT
         try {
             AnalysisLauncher.open(new Plotter(finalPop));
         } catch(Exception ex) {
