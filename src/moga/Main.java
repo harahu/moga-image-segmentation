@@ -59,7 +59,7 @@ public class Main {
         int sz = img.getHeight()*img.getWidth();
         ArrayList<int[]> population = createPopulation(dimst, populationGenerationType.SPECIFIED_RANDOM, sz, 100, br, randomizer);
 
-        segment(population, img, 50, 2, false, true, true);
+        segment(population, img, 50, 2,false, true, true);
         segment(population, img, 50, 2,true, false, true);
         segment(population, img, 50, 2,true, true, false);
         segment(population, img, 50, 2,true, true, true);
