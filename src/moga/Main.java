@@ -64,7 +64,7 @@ public class Main {
             population.add(genotype);
         }
 
-        spea(population, img);
+        //ArrayList<SegmentationGenotype> finalPop = spea2(population, img);
 
         SegmentationPhenotype seg = new SegmentationPhenotype(img, population.get(99));
 
@@ -72,72 +72,175 @@ public class Main {
         System.exit(0);
     }
 
-    public static ArrayList<SegmentationGenotype> spea(ArrayList<int[]> initialPop, BufferedImage img) {
+    public static int[] mutate(int[] genome) {
+        //TODO
+    }
+
+    public static int[] crossover(int[] p1, int[] p2, double rate) {
+        Random randomizer = new Random();
+        int[] child = new int[p1.length];
+        if (randomizer.nextDouble() >= rate) {
+            for (int i = 0; i < p1.length; i++) {
+                child[i] = p1[i];
+            }
+            return child;
+        }
+        for (int i = 0; i < p1.length; i++) {
+            if (randomizer.nextDouble() >= 0.5) {
+                child[i] = p1[i];
+            }
+            else {
+                child[i] = p2[i];
+            }
+        }
+        return child;
+    }
+
+    public static ArrayList<SegmentationGenotype> reproduce(ArrayList<SegmentationGenotype> selected, int popSize, double pCross) {
+        ArrayList<SegmentationGenotype> children = new ArrayList<>();
+        for (int i = 0; i < selected.size(); i++) {
+            SegmentationGenotype p1 = selected.get(i);
+            SegmentationGenotype p2;
+            if (i == selected.size()-1) {
+                p2 = selected.get(0);
+            }
+            else if (i % 2 == 0) {
+                p2 = selected.get(i+1);
+            }
+            else {
+                p2 = selected.get(i-1);
+            }
+            int[] cGenome = crossover(p1.getGenome(), p2.getGenome(), pCross);
+            cGenome = mutate(cGenome);
+            //TODO: SegmentationGenotype child;
+            //TODO: children.add(child);
+        }
+        return children;
+    }
+
+    public static void calculateDominated(ArrayList<SegmentationGenotype> population) {
+        for (SegmentationGenotype p: population) {
+            ArrayList<SegmentationGenotype> domSet = new ArrayList<>();
+            for (SegmentationGenotype q: population) {
+                if (p != q && p.dominates(q)) {
+                    domSet.add(q);
+                }
+            }
+            p.setDomSet(domSet);
+        }
+    }
+
+    public static int calculateRawFitness(SegmentationGenotype p, ArrayList<SegmentationGenotype> population) {
+        int sum = 0;
+        for (SegmentationGenotype q: population) {
+            if (q != p && q.dominates(p)) {
+                sum += q.getDomSet().size();
+            }
+        }
+        return sum;
+    }
+
+    public static double calculateDensity(SegmentationGenotype p, ArrayList<SegmentationGenotype> population) {
+        for (SegmentationGenotype q: population) {
+            q.setDistance(p);
+        }
+        ArrayList<SegmentationGenotype> list = (ArrayList<SegmentationGenotype>) population.clone();
+        list.sort((p1, p2) -> Double.compare(p1.getDistance(), p2.getDistance()));
+        int k = (int) Math.sqrt(population.size());
+        return 1.0/(list.get(k).getDistance() + 2.0);
+    }
+
+    public static void calculateFitness(ArrayList<SegmentationGenotype> population, ArrayList<SegmentationGenotype> archive) {
+        ArrayList<SegmentationGenotype> union = new ArrayList<>();
+        union.addAll(population);
+        union.addAll(archive);
+        calculateDominated(union);
+        for (SegmentationGenotype p: union) {
+            p.setRawFitness(calculateRawFitness(p, union));
+            p.setDensity(calculateDensity(p, union));
+            p.setFitness(p.getRawFitness() + p.getDensity());
+        }
+    }
+
+    public static ArrayList<SegmentationGenotype> environmentalSelection(ArrayList<SegmentationGenotype> population, ArrayList<SegmentationGenotype> archive, int archiveSize) {
+        ArrayList<SegmentationGenotype> union = new ArrayList<>();
+        union.addAll(population);
+        union.addAll(archive);
+
+        ArrayList<SegmentationGenotype> environment = new ArrayList<>();
+        for (SegmentationGenotype p: union) {
+            if (p.getRawFitness() == 0) {
+                environment.add(p);
+            }
+        }
+        if (environment.size() < archiveSize) {
+            union.sort((p1, p2) -> Double.compare(p1.getFitness(), p2.getFitness()));
+            for (SegmentationGenotype p: union) {
+                if (p.getRawFitness() != 0) {
+                    environment.add(p);
+                }
+                if (environment.size() >= archiveSize) {
+                    break;
+                }
+            }
+        }
+        else if (environment.size() > archiveSize) {
+            do {
+                int k = (int) Math.sqrt(environment.size());
+                for (SegmentationGenotype p1: environment) {
+                    for (SegmentationGenotype p2: environment) {
+                        p2.setDistance(p1);
+                    }
+                    ArrayList<SegmentationGenotype> list = (ArrayList<SegmentationGenotype>) environment.clone();
+                    list.sort((g1, g2) -> Double.compare(g1.getDistance(), g2.getDistance()));
+                    p1.setDensity(list.get(k).getDistance());
+                }
+                environment.sort((g1, g2) -> Double.compare(g1.getDensity(), g2.getDensity()));
+                environment.remove(0);
+            } while (environment.size() > archiveSize);
+        }
+        return environment;
+    }
+
+    public static ArrayList<SegmentationGenotype> binaryTournament(ArrayList<SegmentationGenotype> population, int popSize) {
+        Random randomizer = new Random();
+        ArrayList<SegmentationGenotype> selection = new ArrayList<>();
+        while (selection.size() < popSize) {
+            int i = randomizer.nextInt(population.size());
+            int j = i;
+            while (j == i) {
+                j = randomizer.nextInt(population.size());
+            }
+            if (population.get(i).getFitness() < population.get(j).getFitness()) {
+                selection.add(population.get(i));
+            }
+            else {
+                selection.add(population.get(j));
+            }
+        }
+        return selection;
+    }
+
+    public static ArrayList<SegmentationGenotype> strengthParetoEvolutionaryAlgorithm2(ArrayList<int[]> initialPop, BufferedImage img, int popSize, int archiveSize, int maxGen) {
+        int gen = 0;
         ArrayList<SegmentationGenotype> population = new ArrayList<SegmentationGenotype>();
         ArrayList<SegmentationGenotype> archive = new ArrayList<SegmentationGenotype>();
         //Initialize population
         for (int[] genome: initialPop) {
             population.add(new SegmentationGenotype(img, genome));
         }
-        int t = 0;
-        //Sort population
-        int[] popRanking = fastNonDominatedSort(population);
-        for (int rnk: popRanking) {
-            System.out.println(rnk);
-        }
-        return population;
-    }
 
-    public static int[] fastNonDominatedSort(ArrayList<SegmentationGenotype> population) {
-
-        int[] ranking = new int[population.size()];
-        Arrays.fill(ranking, -1);
-
-        int[] domCounts = new int[population.size()];
-
-        ArrayList<ArrayList<Integer>> dominationLists = new ArrayList<>();
-
-        for (int i = 0; i < population.size(); i++) {
-            SegmentationGenotype p = population.get(i);
-            ArrayList<Integer> dominated = new ArrayList<>();
-            int domCount = 0;
-            for (int j = 0; j < population.size(); j++) {
-                SegmentationGenotype q = population.get(j);
-                if (p.dominates(q)) {
-                    dominated.add(j);
-                } else if (q.dominates(p)) {
-                    domCount++;
-                }
+        do {
+            calculateFitness(population, archive);
+            archive = environmentalSelection(population, archive, archiveSize);
+            if (gen >= maxGen) {
+                break;
             }
-            if (domCount == 0) {
-                ranking[i] = 0;
-            }
-            dominationLists.add(dominated);
-            domCounts[i] = domCount;
-        }
-        int i = 0;
-        ArrayList<Integer> front = new ArrayList<>();
-        for (int j = 0; j < ranking.length; j++) {
-            if (ranking[j] == 0) {
-                front.add(j);
-            }
-        }
-        while (front.size() > 0) {
-            ArrayList<Integer> Q = new ArrayList<>();
-            for (int j = 0; j < front.size(); j++) {
-                int pIndex = front.get(j);
-                for (int qIndex : dominationLists.get(pIndex)) {
-                    domCounts[qIndex]--;
-                    if (domCounts[qIndex] == 0) {
-                        ranking[qIndex] = i + 1;
-                        Q.add(qIndex);
-                    }
-                }
-            }
-            i++;
-            front = Q;
-        }
-        return ranking;
+            ArrayList<SegmentationGenotype> selected = binaryTournament(archive, popSize);
+            //TODO: population = reproduce(selected, popSize, )
+            gen++;
+        } while (true);
+        return archive;
     }
 
     public static BufferedImage getImage(String pathName) {
