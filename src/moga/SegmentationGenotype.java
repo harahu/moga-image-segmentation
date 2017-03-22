@@ -71,25 +71,15 @@ public class SegmentationGenotype {
 
     public boolean dominates(SegmentationGenotype q) {
         SegmentationPhenotype qPhen = q.getPhenotype();
-        boolean dominates = false;
-        if (phenotype.getConn() < qPhen.getConn()) {
-            dominates = true;
-        }
-        else if (phenotype.getConn() > qPhen.getConn()) {
+        if (phenotype.getConn() > qPhen.getConn()) {
             return false;
         }
-        if (phenotype.getEdge() < qPhen.getEdge()) {
-            dominates = true;
-        }
-        else if (phenotype.getEdge() > qPhen.getEdge()) {
+        if (phenotype.getEdge() > qPhen.getEdge()) {
             return false;
         }
-        if (phenotype.getDev() < qPhen.getDev()) {
-            dominates = true;
-        }
-        else if (phenotype.getDev() > qPhen.getDev()) {
+        if (phenotype.getDev() > qPhen.getDev()) {
             return false;
         }
-        return dominates;
+        return true;
     }
 }

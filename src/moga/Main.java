@@ -86,7 +86,7 @@ public class Main {
 
             population.add(genotype);
         }
-        ArrayList<SegmentationGenotype> finalPop = strengthParetoEvolutionaryAlgorithm2(population, img, population.size(), population.size()/2, 50);
+        ArrayList<SegmentationGenotype> finalPop = strengthParetoEvolutionaryAlgorithm2(population, img, population.size(), population.size()/2, 10);
         System.out.println("-------------");
         System.out.println(finalPop.size());
         System.out.println("-------------");
@@ -448,7 +448,7 @@ public class Main {
     }
 
     public static int[] switchMutation(int[] genotype_in, Random randomizer, int x_sz, int y_sz) {
-        double mutation_rate = 3.0/(x_sz*y_sz);
+        double mutation_rate = 1.0/(x_sz*y_sz);
         int[] mutant = new int[genotype_in.length];
 
         for(int i = 0; i < genotype_in.length; ++i) {
