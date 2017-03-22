@@ -1,15 +1,19 @@
 package moga;
 
 import com.sun.javafx.geom.Edge;
+import com.sun.javafx.image.IntPixelGetter;
+import org.jzy3d.analysis.AnalysisLauncher;
 
 import javax.imageio.ImageIO;
-import java.awt.*;
+import java.awt.Color;
 import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.*;
+
+enum populationGenerationType {UNIFORM_RANDOM, SPECIFIED_RANDOM}
 
 public class Main {
     public static void main(String[] args) {
@@ -39,36 +43,21 @@ public class Main {
 
         BufferedImage img = getImage(filename);
 
-        run(img);
+        run(img, br);
+
     }
 
-    public static void run(BufferedImage img) {
+
+    public static void run(BufferedImage img, BufferedReader br) {
         Random randomizer = new Random();
         ArrayList<EdgeCost> mst = generateMST(img.getWidth(), img.getHeight(), img, randomizer);
 
         int[] dimst = createDiMST(mst, img.getWidth(), img.getHeight());
 
         Collections.sort(mst);
-        ArrayList<int[]> population = new ArrayList<>();
 
         int sz = img.getHeight()*img.getWidth();
-
-        for(int i = 0; i < 100; ++i) {
-            int[] genotype = new int[sz];
-            System.arraycopy(dimst, 0, genotype, 0, dimst.length);
-
-            for(int j = 0; j < i; ++j) {
-                int a = (int)(randomizer.nextDouble() * (double)sz);
-
-                while(genotype[a] == a) a = (int)(randomizer.nextDouble() * (double)sz);
-
-                genotype[a] = a;
-            }
-
-            population.add(genotype);
-        }
-
-        //here population is initpop for all tasks
+        ArrayList<int[]> population = createPopulation(dimst, populationGenerationType.SPECIFIED_RANDOM, sz, 100, br, randomizer);
 
         segment(population, img, 50, 2, false, true, true);
         segment(population, img, 50, 2,true, false, true);
@@ -82,10 +71,98 @@ public class Main {
         objectives[1] = edge;
         objectives[2] = con;
 
-        ArrayList<SegmentationGenotype> finalPop = strengthParetoEvolutionaryAlgorithm2(population, img, population.size(), population.size()/2, numGen, mutRate, objectives);
-        for (SegmentationGenotype p: finalPop) {
-            p.getPhenotype().drawSegmentation();
+        ArrayList<SegmentationGenotype> finalPop = strengthParetoEvolutionaryAlgorithm2(population, img, population.size(), population.size() / 2, numGen, mutRate, objectives);
+        //DRAWING
+        try {
+            AnalysisLauncher.open(new Plotter(finalPop));
+        } catch(Exception ex) {
+            System.err.println("ERROR PLOTTING");
+            ex.printStackTrace();
         }
+        //END
+    }
+
+    public static ArrayList<int[]> createPopulation(int[] dimst, populationGenerationType type, int genome_size, int pop_sz, BufferedReader br, Random randomizer) {
+        if(type == populationGenerationType.SPECIFIED_RANDOM) {
+            System.out.println("Enter segmentation focus. Comma separated values.");
+            String input;
+            try {
+                input = br.readLine();
+            } catch(IOException ex) {
+                System.err.println("Problem reading line during pop creation. Returning uniform random.");
+                return generatePopulationUniformRandom(dimst, pop_sz, randomizer);
+            }
+            String[] vals = input.split("(,| )+");
+            int[] ids = new int[vals.length];
+            for(int i = 0; i < vals.length; ++i) {
+                int id = Integer.parseInt(vals[i]);
+                ids[i] = id;
+            }
+
+            return generatePopulationSpecRandom(dimst, ids, pop_sz, randomizer);
+        }
+
+        if(type == populationGenerationType.UNIFORM_RANDOM) {
+            return generatePopulationUniformRandom(dimst, pop_sz, randomizer);
+        }
+
+        System.err.println("Incorrect type given. Returning empty population.");
+        return new ArrayList<>();
+    }
+
+    public static ArrayList<int[]> generatePopulationUniformRandom(int[] dimst, int pop_size, Random randomizer) {
+        ArrayList<int[]> population = new ArrayList<>();
+
+        for(int i = 0; i < pop_size; ++i) {
+            int[] genotype = generateIndividualFromDiMST(dimst, i, randomizer);
+            population.add(genotype);
+        }
+
+        return population;
+    }
+
+    public static ArrayList<int[]> generatePopulationSpecRandom(int[] dimst, int[] focus_locations, int pop_sz, Random randomizer) {
+        ArrayList<int[]> population = new ArrayList<>();
+
+        int cuts_per_focus = pop_sz / focus_locations.length;
+        for(int i = 0; i < focus_locations.length; ++i) {
+            int start = focus_locations[i] - cuts_per_focus/2;
+            int end = focus_locations[i] + cuts_per_focus/2;
+            while(start < 0) {
+                ++start;
+                ++end;
+            }
+
+            while(start < end) {
+                int[] genotype = generateIndividualFromDiMST(dimst, start, randomizer);
+                population.add(genotype);
+                ++start;
+            }
+        }
+
+        for(int sz = population.size(); sz < pop_sz; ++sz) {
+            int r = (int)(randomizer.nextDouble()*(double)pop_sz);
+            int[] genotype = generateIndividualFromDiMST(dimst, r, randomizer);
+            population.add(genotype);
+        }
+
+        if(population.size() < pop_sz) System.err.println("Generated pop too small!");
+
+        return population;
+
+    }
+
+    public static int[] generateIndividualFromDiMST(int[] dimst, int cuts, Random randomizer) {
+        int[] genotype = new int[dimst.length];
+        System.arraycopy(dimst, 0, genotype, 0, dimst.length);
+        for(int j = 0; j < cuts; ++j) {
+            int id = (int)(randomizer.nextDouble()*(double)dimst.length);
+
+            while(genotype[id] == id) id = (int)(randomizer.nextDouble()*(double)dimst.length);
+
+            genotype[id] = id;
+        }
+        return genotype;
     }
 
     public static int[] crossover(int[] p1, int[] p2, double rate) {
