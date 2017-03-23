@@ -1,10 +1,10 @@
 package moga;
 
-import com.sun.javafx.geom.Edge;
-import com.sun.javafx.image.IntPixelGetter;
 import org.jzy3d.analysis.AnalysisLauncher;
+import org.math.plot.Plot2DPanel;
 
 import javax.imageio.ImageIO;
+import javax.swing.*;
 import java.awt.Color;
 import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
@@ -147,11 +147,52 @@ public class Main {
         }
 
         //DRAWING PARETO FRONT
-        try {
-            AnalysisLauncher.open(new Plotter(finalPop));
-        } catch(Exception ex) {
-            System.err.println("ERROR PLOTTING");
-            ex.printStackTrace();
+        if(dev && edge && con) {
+            try {
+                AnalysisLauncher.open(new Plotter(finalPop));
+            } catch(Exception ex) {
+                System.err.println("ERROR PLOTTING");
+                ex.printStackTrace();
+            }
+        } else {
+            System.out.println("Using 2d plotter.");
+
+            double[] x_arr = new double[finalPop.size()];
+            double[] y_arr = new double[finalPop.size()];
+
+            int i = 0;
+            for(SegmentationGenotype ind: finalPop) {
+                double x,y;
+                if(con && dev) {
+                    x = ind.getPhenotype().getConn();
+                    y = ind.getPhenotype().getDev();
+                } else if(con && edge) {
+                    x = ind.getPhenotype().getConn();
+                    y = ind.getPhenotype().getEdge();
+                } else {
+                    x = ind.getPhenotype().getEdge();
+                    y = ind.getPhenotype().getDev();
+                }
+                x_arr[i] = x;
+                y_arr[i] = y;
+                ++i;
+            }
+
+            Plot2DPanel plt = new Plot2DPanel();
+            plt.addScatterPlot("Pareto Dominant Solutions", Color.BLACK, x_arr, y_arr);
+
+            String x_name = "Conn";
+            String y_name = "Dev";
+            if(con && edge) y_name = "Edge";
+            else if(edge && dev) x_name = "Edge";
+
+            plt.setAxisLabel(0, x_name);
+            plt.setAxisLabel(1, y_name);
+
+            JFrame frame = new JFrame("Solutions");
+            frame.setContentPane(plt);
+            frame.setVisible(true);
+
         }
         //END
     }
