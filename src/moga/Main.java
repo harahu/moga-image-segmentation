@@ -59,19 +59,23 @@ public class Main {
         int sz = img.getHeight()*img.getWidth();
         ArrayList<int[]> population = createPopulation(dimst, populationGenerationType.SPECIFIED_RANDOM, sz, 100, br, randomizer);
 
-        segment(population, img, 50, 2,false, true, true);
-        segment(population, img, 50, 2,true, false, true);
-        segment(population, img, 50, 2,true, true, false);
-        segment(population, img, 50, 2,true, true, true);
+        //dev-edge
+        segment(population, img, 2, 81, 10, 0.7, 2,true, true, false);
+        //edge-con
+        segment(population, img, 5, 80, 10, 0.7, 2,false, true, true);
+        //dev-con
+        segment(population, img, 5, 80, 10, 0.7, 2,true, false, true);
+        //three
+        segment(population, img, 5, 80, 10, 0.7, 2,true, true, true);
     }
 
-    public static void segment(ArrayList<int[]> population, BufferedImage img, int numGen, int mutRate, boolean dev, boolean edge, boolean con) {
+    public static void segment(ArrayList<int[]> population, BufferedImage img, int cullThreshold, int maxSegNum, int numGen, double crossRate, int mutRate, boolean dev, boolean edge, boolean con) {
         boolean[] objectives = new boolean[3];
         objectives[0] = dev;
         objectives[1] = edge;
         objectives[2] = con;
 
-        ArrayList<SegmentationGenotype> finalPop = strengthParetoEvolutionaryAlgorithm2(population, img, population.size(), population.size() / 2, numGen, mutRate, objectives);
+        ArrayList<SegmentationGenotype> finalPop = strengthParetoEvolutionaryAlgorithm2(population, img, cullThreshold, maxSegNum, population.size(), population.size() / 2, numGen, crossRate, mutRate, objectives);
         finalPop.sort((p1, p2) -> Double.compare(p1.getPhenotype().getSegmentNum(), p2.getPhenotype().getSegmentNum()));
 
         LinkedHashSet<Integer> segmentationNumbers = new LinkedHashSet<>();
@@ -218,7 +222,9 @@ public class Main {
         return child;
     }
 
-    public static ArrayList<SegmentationGenotype> reproduce(ArrayList<SegmentationGenotype> selected, int popSize, double pCross, BufferedImage img, boolean[] objectives, double mutRate) {
+
+
+    public static ArrayList<SegmentationGenotype> reproduce(ArrayList<SegmentationGenotype> selected, int popSize, double pCross, BufferedImage img, boolean[] objectives, double mutRate, int cullThreshold, int maxSegNum) {
         ArrayList<SegmentationGenotype> children = new ArrayList<>();
         for (int i = 0; i < selected.size(); i++) {
             SegmentationGenotype p1 = selected.get(i);
@@ -232,9 +238,13 @@ public class Main {
             else {
                 p2 = selected.get(i-1);
             }
-            int[] cGenome = crossover(p1.getGenome(), p2.getGenome(), pCross);
-            cGenome = switchMutation(cGenome, new Random(), img.getWidth(), img.getHeight(), mutRate);
-            SegmentationGenotype child = new SegmentationGenotype(img, cGenome, objectives);
+
+            SegmentationGenotype child;
+            do {
+                int[] cGenome = crossover(p1.getGenome(), p2.getGenome(), pCross);
+                cGenome = switchMutation(cGenome, new Random(), img.getWidth(), img.getHeight(), mutRate);
+                child = cull(img, cGenome, objectives, cullThreshold);
+            } while (!child.getPhenotype().constrained(maxSegNum));
             children.add(child);
             if (children.size() >= popSize) {
                 break;
@@ -346,7 +356,7 @@ public class Main {
         return selection;
     }
 
-    public static ArrayList<SegmentationGenotype> strengthParetoEvolutionaryAlgorithm2(ArrayList<int[]> initialPop, BufferedImage img, int popSize, int archiveSize, int maxGen, int mutRate, boolean[] objectives) {
+    public static ArrayList<SegmentationGenotype> strengthParetoEvolutionaryAlgorithm2(ArrayList<int[]> initialPop, BufferedImage img, int cullThreshold, int maxSegNum, int popSize, int archiveSize, int maxGen, double crossRate, int mutRate, boolean[] objectives) {
         System.out.println("Evolving");
         int gen = 0;
         ArrayList<SegmentationGenotype> population = new ArrayList<>();
@@ -367,8 +377,8 @@ public class Main {
                 break;
             }
             ArrayList<SegmentationGenotype> selected = binaryTournament(archive, popSize);
-            double pCross = 1.0;
-            population = reproduce(selected, popSize, pCross, img, objectives, mutRate);
+            Collections.shuffle(selected);
+            population = reproduce(selected, popSize, crossRate, img, objectives, mutRate, cullThreshold, maxSegNum);
             gen++;
         } while (true);
         return archive;
@@ -555,6 +565,53 @@ public class Main {
         }
 
         return children;
+    }
+
+    public static SegmentationGenotype cull(BufferedImage img, int[] genotype, boolean[] objectives, int threshold) {
+        int x_sz = img.getWidth();
+        int y_sz = img.getHeight();
+        Random randomizer = new Random();
+
+        SegmentationGenotype child = new SegmentationGenotype(img, genotype, objectives);
+        SegmentationPhenotype phen = child.getPhenotype();
+        ArrayList<Integer> borders = phen.getBorder(threshold);
+
+        do {
+            int[] mutant = new int[genotype.length];
+
+            for(int i = 0; i < genotype.length; ++i) {
+                int[] neighbours;
+                if (!borders.contains(i)) {
+                    mutant[i] = child.getGenome()[i];
+                } else {
+                    neighbours = SegmentationPhenotype.neighbourhood(i, x_sz, y_sz);
+                    int count = 0;
+                    for(int j = 0; j < neighbours.length; ++j) {
+                        if(neighbours[j] != -1) ++count;
+                    }
+
+                    int num = (int)(randomizer.nextDouble()*(count+1));
+
+                    int second_count = 0;
+                    for(int j = 0; j < neighbours.length; ++j) {
+                        if(neighbours[j] != -1) {
+                            if(second_count == num) {
+                                mutant[i] = neighbours[j];
+                                break;
+                            } else {
+                                ++second_count;
+                            }
+                        }
+                    }
+                    if(second_count == count) mutant[i] = i;
+                }
+            }
+            child = new SegmentationGenotype(img, mutant, objectives);
+            phen = child.getPhenotype();
+            borders = phen.getBorder(threshold);
+        } while (borders.size() > 0);
+
+        return child;
     }
 
     public static int[] switchMutation(int[] genotype_in, Random randomizer, int x_sz, int y_sz, double rate) {

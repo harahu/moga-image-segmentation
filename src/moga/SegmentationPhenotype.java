@@ -200,6 +200,28 @@ public class SegmentationPhenotype {
         return conn;
     }
 
+    public boolean constrained(int maxSegNum) {
+        if (getSegmentNum() < 1 || getSegmentNum() > maxSegNum) {
+            return false;
+        }
+        return true;
+    }
+
+    public ArrayList<Integer> getBorder(int threshold) {
+        ArrayList<Integer> indices = new ArrayList<>();
+        for (ArrayList<Integer> segment: segments) {
+            if (segment.size() < threshold) {
+                for (Integer p: segment) {
+                    if (isBorderPixel(p)) {
+                        indices.add(p);
+                        break;
+                    }
+                }
+            }
+        }
+        return indices;
+    }
+
     private int[] neighbourhood(int pixel) {
         return neighbourhood(pixel, image.getWidth(), image.getHeight());
     }
