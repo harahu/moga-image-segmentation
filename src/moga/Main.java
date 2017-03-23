@@ -47,6 +47,31 @@ public class Main {
 
     }
 
+    public static int requestCullingThreshold() {
+        int t = 3;
+        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+        System.out.println("Culling Threshold:");
+        try {
+            t = Integer.parseInt(br.readLine());
+        } catch (IOException ex) {
+            System.err.println("IOException reading cT number.");
+            ex.printStackTrace();
+        }
+        return t;
+    }
+
+    public static int requestMaxSeg() {
+        int t = 100;
+        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+        System.out.println("Max Segmentation Number:");
+        try {
+            t = Integer.parseInt(br.readLine());
+        } catch (IOException ex) {
+            System.err.println("IOException reading mSeg number.");
+            ex.printStackTrace();
+        }
+        return t;
+    }
 
     public static void run(BufferedImage img, BufferedReader br) {
         Random randomizer = new Random();
@@ -60,13 +85,25 @@ public class Main {
         ArrayList<int[]> population = createPopulation(dimst, populationGenerationType.SPECIFIED_RANDOM, sz, 100, br, randomizer);
 
         //dev-edge
-        segment(population, img, 2, 81, 10, 0.7, 2,true, true, false);
+        System.out.println("Dev-Edge");
+        int cullingThreshold = requestCullingThreshold();
+        int maxSegNum = requestMaxSeg();
+        segment(population, img, cullingThreshold, maxSegNum, 10, 0.7, 2,true, true, false);
         //edge-con
-        segment(population, img, 5, 80, 10, 0.7, 2,false, true, true);
+        System.out.println("Edge-Con");
+        cullingThreshold = requestCullingThreshold();
+        maxSegNum = requestMaxSeg();
+        segment(population, img, cullingThreshold, maxSegNum, 10, 0.7, 2,false, true, true);
         //dev-con
-        segment(population, img, 5, 80, 10, 0.7, 2,true, false, true);
+        System.out.println("Dev-Con");
+        cullingThreshold = requestCullingThreshold();
+        maxSegNum = requestMaxSeg();
+        segment(population, img, cullingThreshold, maxSegNum, 10, 0.7, 2,true, false, true);
         //three
-        segment(population, img, 5, 80, 10, 0.7, 2,true, true, true);
+        System.out.println("Three-Objective");
+        cullingThreshold = requestCullingThreshold();
+        maxSegNum = requestMaxSeg();
+        segment(population, img, cullingThreshold, maxSegNum, 10, 0.7, 2,true, true, true);
     }
 
     public static void segment(ArrayList<int[]> population, BufferedImage img, int cullThreshold, int maxSegNum, int numGen, double crossRate, int mutRate, boolean dev, boolean edge, boolean con) {
